@@ -1,13 +1,21 @@
 require 'json'
 
+PRODUCT_SIZE = 'm'
+
 def parse_json_file(file_path)
   begin
     data = JSON.parse(File.read(file_path))
 
     data['hasVariant'].each do |tee|
       if tee.key?('name') && !tee['name'].empty? && tee['offers']['availability'] == "InStock"
-        puts tee['name']
-        puts tee['offers']['price']
+        size = tee['size'].downcase!.strip
+        price = tee['offers']['price']
+
+        if PRODUCT_SIZE == size
+          puts tee
+          puts "size:#{size}"
+          puts tee['offers']['price']
+        end
       end
     end
 
