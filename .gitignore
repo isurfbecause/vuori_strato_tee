@@ -1,3 +1,6 @@
 node_modules
 venv
 .env
+deployment-package
+deployment-package.zip
+__pycache__/core.cpython-312.pyc
