@@ -2,7 +2,6 @@ import requests
 import json
 import os
 from dotenv import load_dotenv
-from mailgun import Mailgun
 
 # Load environment variables from .env file
 load_dotenv()
@@ -12,15 +11,16 @@ EMAIL_DOMAIN = os.getenv('EMAIL_DOMAIN')
 MAILGUN_API_KEY = os.getenv('MAILGUN_API_KEY')
 FROM_EMAIL = os.getenv('FROM_EMAIL')
 TO_EMAIL = os.getenv('TO_EMAIL').split(',')
+TARGET_URL = os.getenv('TARGET_URL')
 
 DESIRED_SIZE = 'm'
 SHIRT = 'strato-tech-tee-white'
 
 results = []
 
+
 def send_mail(content):
     print(content)
-
     print({
         'EMAIL_DOMAIN': EMAIL_DOMAIN,
         'MAILGUN_API_KEY': MAILGUN_API_KEY,
@@ -40,7 +40,8 @@ def send_mail(content):
         response = requests.post(
             f"https://api.mailgun.net/v3/{EMAIL_DOMAIN}/messages",
             auth=('api', MAILGUN_API_KEY),
-            data=message_data
+            data=message_data,
+            timeout=10,
         )
 
         # Check response
@@ -54,14 +55,11 @@ def send_mail(content):
 
 
 def get_shirts():
-    url = 'https://vuoriclothing.com/_next/data/GZ0DfYXEaTrNQt0GABivj/en-US/products/' + SHIRT + '.json'
-
-    response = requests.get(url)
+    url = TARGET_URL + SHIRT + '.json'
+    response = requests.get(url, timeout=10)
     if response.status_code == 200:
         json_data = response.json()  # Parse JSON response
         # Dump JSON response as a string for output
-        json_string = json.dumps(json_data['pageProps'], indent=2)
-        json_string = json.dumps(json_data['pageProps']['pdpPageProps']['variants'], indent=2)
 
         for v in json_data['pageProps']['pdpPageProps']['variants']:
             options = v['selectedOptions']
@@ -73,7 +71,7 @@ def get_shirts():
             in_stock = v['availableForSale']
 
             if (is_desired_size and in_stock):
-                d = {'color': color, 'size': size, 'price':price}
+                d = {'color': color, 'size': size, 'price': price}
                 results.append(d)
 
         sorted_results = sorted(results, key=lambda x: x['price'])
@@ -81,6 +79,7 @@ def get_shirts():
         return sorted_results
     else:
         print(f"Failed to retrieve: {url}")
+
 
 def price_change(shirts):
     PRICE_CHANGED = False
@@ -101,6 +100,7 @@ def price_change(shirts):
         print('No price change. Email will not be sent.')
 
     return PRICE_CHANGED
+
 
 shirts = get_shirts()
 
