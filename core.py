@@ -13,10 +13,8 @@ FROM_EMAIL = os.getenv('FROM_EMAIL')
 TO_EMAIL = os.getenv('TO_EMAIL').split(',')
 TARGET_URL = os.getenv('TARGET_URL')
 
-DESIRED_SIZE = 'm'
-SHIRT = 'strato-tech-tee-white'
-
-results = []
+DESIRED_SIZE = os.getenv('DESIRED_SIZE')
+SHIRT = os.getenv('SHIRT')
 
 
 def send_mail(content):
@@ -55,6 +53,7 @@ def send_mail(content):
 
 
 def get_shirts():
+    results = []
     url = TARGET_URL + SHIRT + '.json'
     response = requests.get(url, timeout=10)
     if response.status_code == 200:
