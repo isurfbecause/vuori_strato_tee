@@ -15,24 +15,8 @@ MAILGUN_API_KEY = os.getenv('MAILGUN_API_KEY')
 FROM_EMAIL = os.getenv('FROM_EMAIL')
 TO_EMAIL = os.getenv('TO_EMAIL').split(',')
 
-
 DESIRED_SIZE = 'm'
-
-shirts = [
-    'strato-tech-tee-white',
-    # 'strato-tech-tee-salt-heather',
-    # 'strato-tech-tee-charcoal-heather',
-    # 'strato-tech-tee-platinum-heather',
-    # 'strato-tech-tee-black',
-    # 'strato-tech-tee-kashmir-heather',
-    # 'strato-tech-tee-cashew-heather',
-    # 'strato-tech-tee-clove-heather',
-    # 'strato-tech-tee-aspen-heather',
-    # 'strato-tech-tee-elderberry-heather',
-    # 'strato-tech-tee-greige-heather',
-    # 'strato-tech-tee-chambray-heather',
-    # 'strato-tech-tee-smoked-beryl'
-]
+SHIRT = 'strato-tech-tee-white'
 
 results = []
 
@@ -55,8 +39,6 @@ def send_mail(content):
             'text': json.dumps(content,  separators=(',', ':')),
         }
 
-        print(message_data)
-
         response = requests.post(
             f"https://api.mailgun.net/v3/{EMAIL_DOMAIN}/messages",
             auth=('api', MAILGUN_API_KEY),
@@ -74,34 +56,55 @@ def send_mail(content):
 
 
 def get_shirts():
-    for shirt in shirts[:1]:
-        url = 'https://vuoriclothing.com/_next/data/GZ0DfYXEaTrNQt0GABivj/en-US/products/' + shirt + '.json'
+    url = 'https://vuoriclothing.com/_next/data/GZ0DfYXEaTrNQt0GABivj/en-US/products/' + SHIRT + '.json'
 
-        response = requests.get(url)
-        if response.status_code == 200:
-            json_data = response.json()  # Parse JSON response
-            # Dump JSON response as a string for output
-            json_string = json.dumps(json_data['pageProps'], indent=2)
-            json_string = json.dumps(json_data['pageProps']['pdpPageProps']['variants'], indent=2)
+    response = requests.get(url)
+    if response.status_code == 200:
+        json_data = response.json()  # Parse JSON response
+        # Dump JSON response as a string for output
+        json_string = json.dumps(json_data['pageProps'], indent=2)
+        json_string = json.dumps(json_data['pageProps']['pdpPageProps']['variants'], indent=2)
 
-            for v in json_data['pageProps']['pdpPageProps']['variants']:
-                options = v['selectedOptions']
-                size = options[1]['value']
-                is_desired_size = size.lower() == DESIRED_SIZE
-                color = options[0]['value']
-                color = options[0]['value']
-                price = v['price']
-                in_stock = v['availableForSale']
+        for v in json_data['pageProps']['pdpPageProps']['variants']:
+            options = v['selectedOptions']
+            size = options[1]['value']
+            is_desired_size = size.lower() == DESIRED_SIZE
+            color = options[0]['value']
+            color = options[0]['value']
+            price = v['price']
+            in_stock = v['availableForSale']
 
-                if (is_desired_size and in_stock):
-                    d = {'color': color, 'size': size, 'price':price}
-                    results.append(d)
+            if (is_desired_size and in_stock):
+                d = {'color': color, 'size': size, 'price':price}
+                results.append(d)
 
-            sorted_results = sorted(results, key=lambda x: x['price'])
-            # print(sorted_results)
-            return sorted_results
-        else:
-            print(f"Failed to retrieve: {url}")
+        sorted_results = sorted(results, key=lambda x: x['price'])
+        print(sorted_results)
+        return sorted_results
+    else:
+        print(f"Failed to retrieve: {url}")
+
+def price_change(shirts):
+    PRICE_CHANGED = False
+
+    price_diff = shirts[0].get('price')
+    print('price_diff:' + str(price_diff))
+
+    for shirt in shirts[1:]:
+        shirt_price = shirt.get('price')
+
+        if shirt_price != price_diff:
+            price_diff = shirt_price
+            PRICE_CHANGED = True
+
+    if PRICE_CHANGED:
+        print('send email')
+    else:
+        print('No price change. Email will not be sent.')
+
+    return PRICE_CHANGED
 
 shirts = get_shirts()
-send_mail(shirts)
+
+if price_change(shirts):
+    send_mail(shirts)
