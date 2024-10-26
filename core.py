@@ -9,6 +9,7 @@ load_dotenv()
 
 # Fetch environment variables
 EMAIL_DOMAIN = os.getenv("EMAIL_DOMAIN")
+ENV = os.getenv("ENV")
 MAILGUN_API_KEY = os.getenv("MAILGUN_API_KEY")
 FROM_EMAIL = os.getenv("FROM_EMAIL")
 TO_EMAIL = os.getenv("TO_EMAIL").split(",")
@@ -106,5 +107,5 @@ def price_change(shirts):
 
 shirts = get_shirts()
 
-if price_change(shirts):
+if price_change(shirts) or ENV == "test":
     send_mail(shirts)
